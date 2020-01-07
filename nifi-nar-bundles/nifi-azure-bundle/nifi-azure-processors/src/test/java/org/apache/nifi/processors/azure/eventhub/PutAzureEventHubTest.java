@@ -23,6 +23,7 @@ import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -110,7 +111,7 @@ public class PutAzureEventHubTest {
         }
 
         @Override
-        protected CompletableFuture<Void> sendMessage(final byte[] buffer, String partitioningKey) throws ProcessException {
+        protected CompletableFuture<Void> sendMessage(final byte[] buffer, String partitioningKey, Map<String, ? extends Object> userProperties) throws ProcessException {
             receivedBuffer = buffer;
             return CompletableFuture.completedFuture(null);
         }
