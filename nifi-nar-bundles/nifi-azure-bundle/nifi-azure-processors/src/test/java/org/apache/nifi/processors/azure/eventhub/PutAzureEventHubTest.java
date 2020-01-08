@@ -45,7 +45,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -241,7 +240,10 @@ public class PutAzureEventHubTest {
     	MockitoAnnotations.initMocks(processor);
     	    	    	
     	final BlockingQueue<CompletableFuture<FlowFileResultCarrier<Relationship>>> futureQueue = new LinkedBlockingQueue<CompletableFuture<FlowFileResultCarrier<Relationship>>>();
-    	CompletableFuture<FlowFileResultCarrier<Relationship>> throwingFuture = (CompletableFuture<FlowFileResultCarrier<Relationship>>)mock(CompletableFuture.class);
+    	
+    	@SuppressWarnings("unchecked")
+		CompletableFuture<FlowFileResultCarrier<Relationship>> throwingFuture = (CompletableFuture<FlowFileResultCarrier<Relationship>>)mock(CompletableFuture.class);
+    	
     	when(throwingFuture.get()).thenThrow(new ExecutionException(new IllegalArgumentException()));
 
     	MockFlowFile flowFile1 = new MockFlowFile(1);
@@ -265,14 +267,29 @@ public class PutAzureEventHubTest {
     	
 		try {
 			processor.waitForAllFutures(context, session,  new StopWatch(true), futureQueue);
-			assertFalse(false);
+			assertFalse(true);
 		}catch(ProcessException pe) {
 			assertTrue(true);
+			assertFalse(Thread.currentThread().isInterrupted());
 		}
     	
     	verify(session).transfer(flowFile1, PutAzureEventHub.REL_SUCCESS);
     	verify(session).transfer(flowFile2, PutAzureEventHub.REL_FAILURE);
     	verify(session).rollback();
+    	
+    	//Second run to test interrupted exception
+    	Mockito.reset(throwingFuture, session);
+    	when(throwingFuture.get()).thenThrow(new InterruptedException());
+    	doNothing().when(session).transfer(any(FlowFile.class), any());
+		doReturn(flowFile2).when(session).penalize(any());
+		
+		try {
+			processor.waitForAllFutures(context, session,  new StopWatch(true), futureQueue);
+			assertFalse(true);
+		}catch(ProcessException pe) {
+			assertTrue(true);
+			assertTrue(Thread.currentThread().isInterrupted());
+		}
 
     }
     
@@ -295,7 +312,7 @@ public class PutAzureEventHubTest {
         }
 
         @Override
-        protected CompletableFuture<Void> sendMessage(final byte[] buffer, String partitioningKey, Map<String, ? extends Object> userProperties) throws ProcessException {
+        protected CompletableFuture<Void> sendMessage(final byte[] buffer, String partitioningKey, Map<String, Object> userProperties) throws ProcessException {
             receivedBuffer = buffer;
             
             return CompletableFuture.completedFuture(null);

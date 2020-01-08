@@ -4,13 +4,14 @@ import org.apache.nifi.flowfile.FlowFile;
 
 public class FlowFileResultCarrier<T> {
 
-	private FlowFile flowFile;
-	private T result;
-	private Throwable exception;
+	final private FlowFile flowFile;
+	final private T result;
+	final private Throwable exception;
 	
 	public FlowFileResultCarrier(FlowFile flowFile, T result) {
 		this.flowFile = flowFile;
 		this.result = result;
+		this.exception = null;
 	}
 	
 	public FlowFileResultCarrier(FlowFile flowFile, T result, Throwable exception) {
@@ -22,20 +23,13 @@ public class FlowFileResultCarrier<T> {
 	public FlowFile getFlowFile() {
 		return flowFile;
 	}
-	public void setFlowFile(FlowFile flowFile) {
-		this.flowFile = flowFile;
-	}
+
 	public T getResult() {
 		return result;
 	}
-	public void setResult(T result) {
-		this.result = result;
-	}
+
 	public Throwable getException() {
 		return exception;
-	}
-	public void setException(Throwable exception) {
-		this.exception = exception;
 	}
 	
 }

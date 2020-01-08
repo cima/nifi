@@ -239,9 +239,16 @@ public class PutAzureEventHub extends AbstractProcessor {
 	                session.transfer(session.penalize(flowFile), REL_FAILURE);
 	        	} 	
 			}
-		} catch (InterruptedException | ExecutionException | CancellationException | CompletionException e) {
+	        
+		} 
+		catch (InterruptedException | ExecutionException | CancellationException | CompletionException e) {
 			getLogger().error("Batch processing failed", e);
 			session.rollback();
+			
+			if(e instanceof InterruptedException) {
+				Thread.currentThread().interrupt();	
+			}
+			
 			throw new ProcessException("Batch processing failed", e);
 		}
 	}
@@ -356,7 +363,7 @@ public class PutAzureEventHub extends AbstractProcessor {
      * 
      * {@link https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-quotas} 
      */
-    protected CompletableFuture<Void> sendMessage(final byte[] buffer, String partitioningKey, Map<String, ? extends Object> userProperties) throws ProcessException {
+    protected CompletableFuture<Void> sendMessage(final byte[] buffer, String partitioningKey, Map<String, Object> userProperties) throws ProcessException {
 
         final EventHubClient sender = senderQueue.poll();
         if(sender == null) {
